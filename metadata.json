@@ -1,0 +1,8 @@
+{
+  "name": "FitTrack",
+  "description": "Smart AI nutrition assistant that tracks calories and macros from food photos.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
