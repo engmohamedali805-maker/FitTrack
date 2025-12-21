@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WorkoutLog, WorkoutExercise, ExerciseSet, WorkoutTemplate } from '../types';
 import { EXERCISE_DB, ExerciseDefinition } from '../data/exercises';
-import { X, Dumbbell, Plus, Search, Trash2, CheckCircle2, ChevronDown, ChevronUp, Save, Layers, ChevronRight } from 'lucide-react';
+import { X, Dumbbell, Plus, Search, Trash2, CheckCircle2, ChevronDown, ChevronUp, Save, Layers, ArrowRight, Loader2 } from 'lucide-react';
 
 interface WorkoutModalProps {
   isOpen: boolean;
@@ -50,6 +50,7 @@ export const WorkoutModal: React.FC<WorkoutModalProps> = ({ isOpen, onClose, wor
   const [activeTab, setActiveTab] = useState<'all' | 'templates' | 'cardio' | 'core'>('all');
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [savingRoutineName, setSavingRoutineName] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const getDefaultTemplates = (): WorkoutTemplate[] => {
     const createSets = (count: number, reps: number) => {
@@ -62,16 +63,58 @@ export const WorkoutModal: React.FC<WorkoutModalProps> = ({ isOpen, onClose, wor
     };
 
     return [
-      { id: 'user_day_1', name: 'Day 1: Push (دفع)', exercises: [
-        { id: 'u1_1', exerciseId: 'chest_press_machine', name: 'Chest Press Machine', muscle: 'Chest', sets: createSets(3, 10) },
-        { id: 'u1_3', exerciseId: 'front_shoulder_press_machine', name: 'Front Shoulder Presses Machine', muscle: 'Shoulders', sets: createSets(3, 10) },
-        { id: 'u1_5', exerciseId: 'tricep_rope_pushdown', name: 'Triceps Rope Pushdown', muscle: 'Arms', sets: createSets(3, 10) }
-      ]},
-      { id: 'user_day_2', name: 'Day 2: Pull (سحب)', exercises: [
-        { id: 'u2_1', exerciseId: 'lat_pulldown_wide', name: 'Lat Pull Down Wide', muscle: 'Back', sets: createSets(3, 10) },
-        { id: 'u2_2', exerciseId: 'seated_row_neutral', name: 'Seated Rows Neutral Grip 11', muscle: 'Back', sets: createSets(3, 10) },
-        { id: 'u2_6', exerciseId: 'bicep_incline_db_curl', name: 'Biceps Inclined Dumbbell Curls', muscle: 'Arms', sets: createSets(3, 10) }
-      ]}
+      {
+        id: 'user_day_1',
+        name: 'Day 1: Push (دفع)',
+        exercises: [
+          { id: 'u1_1', exerciseId: 'chest_press_machine', name: 'Chest Press Machine', muscle: 'Chest', sets: createSets(3, 10) },
+          { id: 'u1_2', exerciseId: 'decline_cable_press', name: 'Decline Cable Press Full', muscle: 'Chest', sets: createSets(3, 10) },
+          { id: 'u1_3', exerciseId: 'front_shoulder_press_machine', name: 'Front Shoulder Presses Machine', muscle: 'Shoulders', sets: createSets(3, 10) },
+          { id: 'u1_4', exerciseId: 'lateral_raises_bench', name: 'Lateral Raises On Bench Shoulder', muscle: 'Shoulders', sets: createSets(3, 12) },
+          { id: 'u1_5', exerciseId: 'tricep_rope_pushdown', name: 'Triceps Rope Pushdown', muscle: 'Arms', sets: createSets(3, 10) },
+          { id: 'u1_6', exerciseId: 'tricep_cable_overhead', name: 'Seated Triceps Cable Overhead Extension', muscle: 'Arms', sets: createSets(3, 12) },
+          { id: 'u1_7', exerciseId: 'crunches', name: 'Crunches', muscle: 'Core', sets: createSets(3, 20) },
+        ]
+      },
+      {
+        id: 'user_day_2',
+        name: 'Day 2: Pull (سحب)',
+        exercises: [
+          { id: 'u2_1', exerciseId: 'lat_pulldown_wide', name: 'Lat Pull Down Wide', muscle: 'Back', sets: createSets(3, 10) },
+          { id: 'u2_2', exerciseId: 'seated_row_neutral', name: 'Seated Rows Neutral Grip 11', muscle: 'Back', sets: createSets(3, 10) },
+          { id: 'u2_3', exerciseId: 'seated_row_wide', name: 'Seated Row Wide Grip', muscle: 'Back', sets: createSets(3, 10) },
+          { id: 'u2_4', exerciseId: 'back_extension', name: 'Back Extension Glutes & Hamstring', muscle: 'Back', sets: createSets(3, 12) },
+          { id: 'u2_5', exerciseId: 'rear_delt_fly_machine', name: 'Rear Delt Fly Machine', muscle: 'Shoulders', sets: createSets(3, 10) },
+          { id: 'u2_6', exerciseId: 'bicep_incline_db_curl', name: 'Biceps Inclined Dumbbell Curls', muscle: 'Arms', sets: createSets(3, 10) },
+          { id: 'u2_7', exerciseId: 'preacher_curl_machine', name: 'Preacher Curl Machine', muscle: 'Arms', sets: createSets(3, 10) },
+        ]
+      },
+      {
+        id: 'user_day_3',
+        name: 'Day 3: Legs & Core (أرجل وبطن)',
+        exercises: [
+          { id: 'u3_1', exerciseId: 'db_rdl', name: 'Dumbbell Romanian Deadlift', muscle: 'Legs', sets: createSets(3, 15) },
+          { id: 'u3_2', exerciseId: 'seated_leg_curl', name: 'Seated Leg Curl Down', muscle: 'Legs', sets: createSets(3, 10) },
+          { id: 'u3_3', exerciseId: 'leg_extensions', name: 'Leg Extensions', muscle: 'Legs', sets: createSets(3, 12) },
+          { id: 'u3_4', exerciseId: 'machine_abduction', name: 'Machine Abductions', muscle: 'Legs', sets: createSets(3, 10) },
+          { id: 'u3_5', exerciseId: 'standing_calf_raise_db', name: 'Standing Calf Raises With Dumbbell', muscle: 'Legs', sets: createSets(4, 15) },
+          { id: 'u3_6', exerciseId: 'russian_twist', name: 'Russian Twist Exercise', muscle: 'Core', sets: createSets(3, 20) },
+          { id: 'u3_7', exerciseId: 'plank', name: 'Plank Core', muscle: 'Core', sets: createSets(3, 60) },
+        ]
+      },
+      {
+        id: 'user_day_4',
+        name: 'Day 4: Full Body (جسم كامل)',
+        exercises: [
+          { id: 'u4_1', exerciseId: 'leg_press', name: 'Leg Presses', muscle: 'Legs', sets: createSets(3, 10) },
+          { id: 'u4_2', exerciseId: 'seated_calf_raise', name: 'Seated Calf Raise', muscle: 'Legs', sets: createSets(3, 20) },
+          { id: 'u4_3', exerciseId: 'decline_cable_fly', name: 'Decline Cable Flys', muscle: 'Chest', sets: createSets(3, 10) },
+          { id: 'u4_4', exerciseId: 'chest_press_machine', name: 'Chest Press Machine', muscle: 'Chest', sets: createSets(3, 10) },
+          { id: 'u4_5', exerciseId: 'lat_pulldown_close', name: 'Lat Pulldown Close Grip (11)', muscle: 'Back', sets: createSets(3, 10) },
+          { id: 'u4_6', exerciseId: 'rows_machine_wide', name: 'Rows Machine Wide Grip', muscle: 'Back', sets: createSets(3, 10) },
+          { id: 'u4_7', exerciseId: 'cable_curl_pronated', name: 'Cable Curl Pronated Grip', muscle: 'Arms', sets: createSets(3, 15) },
+        ]
+      }
     ];
   };
 
@@ -81,9 +124,12 @@ export const WorkoutModal: React.FC<WorkoutModalProps> = ({ isOpen, onClose, wor
       setIsAddingExercise(false);
       setSearchTerm('');
       setActiveTab('all');
+      setIsSaving(false);
+      
       const savedTemplates = localStorage.getItem('workout_templates');
-      if (savedTemplates) setTemplates(JSON.parse(savedTemplates));
-      else {
+      if (savedTemplates) {
+        setTemplates(JSON.parse(savedTemplates));
+      } else {
         const defaults = getDefaultTemplates();
         setTemplates(defaults);
         localStorage.setItem('workout_templates', JSON.stringify(defaults));
@@ -94,8 +140,12 @@ export const WorkoutModal: React.FC<WorkoutModalProps> = ({ isOpen, onClose, wor
   if (!isOpen) return null;
 
   const handleSaveWorkout = () => {
+    setIsSaving(true);
     onSave({ exercises });
-    onClose(); 
+    setTimeout(() => {
+        setIsSaving(false);
+        onClose();
+    }, 500);
   };
 
   const handleSaveRoutine = (name: string) => {
@@ -172,8 +222,16 @@ export const WorkoutModal: React.FC<WorkoutModalProps> = ({ isOpen, onClose, wor
           <div><h2 className="font-bold text-lg leading-tight">تمرين اليوم</h2><p className="text-xs text-slate-400">{formattedDate}</p></div>
         </div>
         <div className="flex gap-2">
-          {!isAddingExercise && <button onClick={() => setIsAddingExercise(true)} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 text-slate-300"><Plus size={20} /></button>}
-          {exercises.length > 0 && !isAddingExercise && <button onClick={() => setSavingRoutineName('')} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 text-indigo-300"><Save size={20} /></button>}
+          {!isAddingExercise && (
+             <button onClick={() => setIsAddingExercise(true)} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 text-slate-300">
+               <Plus size={20} />
+             </button>
+          )}
+          {exercises.length > 0 && !isAddingExercise && (
+             <button onClick={() => setSavingRoutineName('')} title="حفظ كروتين جديد" className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 text-indigo-300">
+               <Save size={20} />
+             </button>
+          )}
           <button onClick={onClose} className="hover:bg-slate-700 p-2 rounded-full"><X size={24} /></button>
         </div>
       </div>
@@ -186,14 +244,14 @@ export const WorkoutModal: React.FC<WorkoutModalProps> = ({ isOpen, onClose, wor
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-28">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32">
         {exercises.length === 0 && !isAddingExercise && (
           <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-6">
             <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center shadow-inner"><Dumbbell size={40} /></div>
             <div className="text-center"><h3 className="font-bold text-slate-700">ابدأ التمرين!</h3><p className="text-sm">أضف تمارين أو حمل روتينك.</p></div>
             <div className="flex flex-col gap-2 w-full max-w-xs">
-              <button onClick={() => { setIsAddingExercise(true); setActiveTab('templates'); }} className="bg-indigo-600 text-white px-6 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg"><Layers size={20}/> استعراض الروتينات</button>
-              <button onClick={() => setIsAddingExercise(true)} className="bg-white border border-slate-200 text-slate-600 px-6 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm"><Plus size={20}/> إضافة تمرين يدوي</button>
+              <button onClick={() => { setIsAddingExercise(true); setActiveTab('templates'); }} className="bg-indigo-600 text-white px-6 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all"><Layers size={20}/> استعراض الروتينات</button>
+              <button onClick={() => setIsAddingExercise(true)} className="bg-white border border-slate-200 text-slate-600 px-6 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all"><Plus size={20}/> إضافة تمرين يدوي</button>
             </div>
           </div>
         )}
@@ -205,7 +263,7 @@ export const WorkoutModal: React.FC<WorkoutModalProps> = ({ isOpen, onClose, wor
               <div className="p-4 bg-slate-50 border-b flex justify-between items-center" onClick={() => setExpandedExerciseId(expandedExerciseId === ex.id ? null : ex.id)}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-white border p-1"><MuscleIcon muscle={ex.muscle} /></div>
-                  <div><h3 className="font-bold text-slate-700 text-sm">{ex.name}</h3><span className="text-[10px] text-slate-400 font-bold uppercase">{ex.muscle}</span></div>
+                  <div className="text-right"><h3 className="font-bold text-slate-700 text-sm">{ex.name}</h3><span className="text-[10px] text-slate-400 font-bold uppercase">{ex.muscle}</span></div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={(e) => { e.stopPropagation(); setExercises(prev => prev.filter(item => item.id !== ex.id)); }} className="text-slate-300 hover:text-red-500 p-2"><Trash2 size={18} /></button>
@@ -224,20 +282,20 @@ export const WorkoutModal: React.FC<WorkoutModalProps> = ({ isOpen, onClose, wor
                       <div className="col-span-1 text-xs font-black text-slate-400 text-center">{idx + 1}</div>
                       {isCardio ? (
                         <>
-                          <div className="col-span-3"><input type="number" value={set.time || ''} placeholder="0" onChange={(e) => handleUpdateSet(ex.id, set.id, 'time', parseFloat(e.target.value))} className="w-full text-center py-2.5 bg-white rounded-lg outline-none text-sm font-bold" /></div>
-                          <div className="col-span-3"><input type="number" value={set.speed || ''} placeholder="0" onChange={(e) => handleUpdateSet(ex.id, set.id, 'speed', parseFloat(e.target.value))} className="w-full text-center py-2.5 bg-white rounded-lg outline-none text-sm font-bold" /></div>
-                          <div className="col-span-3"><input type="number" value={set.incline || ''} placeholder="0" onChange={(e) => handleUpdateSet(ex.id, set.id, 'incline', parseFloat(e.target.value))} className="w-full text-center py-2.5 bg-white rounded-lg outline-none text-sm font-bold" /></div>
+                          <div className="col-span-3"><input type="number" value={set.time || ''} placeholder="0" onChange={(e) => handleUpdateSet(ex.id, set.id, 'time', parseFloat(e.target.value))} className="w-full text-center py-2.5 bg-white rounded-lg outline-none text-sm font-bold shadow-inner" /></div>
+                          <div className="col-span-3"><input type="number" value={set.speed || ''} placeholder="0" onChange={(e) => handleUpdateSet(ex.id, set.id, 'speed', parseFloat(e.target.value))} className="w-full text-center py-2.5 bg-white rounded-lg outline-none text-sm font-bold shadow-inner" /></div>
+                          <div className="col-span-3"><input type="number" value={set.incline || ''} placeholder="0" onChange={(e) => handleUpdateSet(ex.id, set.id, 'incline', parseFloat(e.target.value))} className="w-full text-center py-2.5 bg-white rounded-lg outline-none text-sm font-bold shadow-inner" /></div>
                         </>
                       ) : (
                         <>
-                          <div className="col-span-4"><input type="number" value={set.weight || ''} placeholder="0" onChange={(e) => handleUpdateSet(ex.id, set.id, 'weight', parseFloat(e.target.value))} className="w-full text-center py-2.5 bg-white rounded-lg outline-none text-sm font-bold" /></div>
-                          <div className="col-span-4"><input type="number" value={set.reps || ''} placeholder="0" onChange={(e) => handleUpdateSet(ex.id, set.id, 'reps', parseFloat(e.target.value))} className="w-full text-center py-2.5 bg-white rounded-lg outline-none text-sm font-bold" /></div>
+                          <div className="col-span-4"><input type="number" value={set.weight || ''} placeholder="0" onChange={(e) => handleUpdateSet(ex.id, set.id, 'weight', parseFloat(e.target.value))} className="w-full text-center py-2.5 bg-white rounded-lg outline-none text-sm font-bold shadow-inner" /></div>
+                          <div className="col-span-4"><input type="number" value={set.reps || ''} placeholder="0" onChange={(e) => handleUpdateSet(ex.id, set.id, 'reps', parseFloat(e.target.value))} className="w-full text-center py-2.5 bg-white rounded-lg outline-none text-sm font-bold shadow-inner" /></div>
                         </>
                       )}
-                      <div className="col-span-2 flex justify-center"><button onClick={() => handleToggleSet(ex.id, set.id)} className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${set.completed ? 'bg-emerald-500 text-white shadow-lg' : 'bg-white border border-slate-200 text-transparent'}`}><CheckCircle2 size={18} strokeWidth={2.5} /></button></div>
+                      <div className="col-span-2 flex justify-center"><button onClick={() => handleToggleSet(ex.id, set.id)} className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${set.completed ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200' : 'bg-white border border-slate-200 text-transparent'}`}><CheckCircle2 size={18} strokeWidth={2.5} /></button></div>
                     </div>
                   ))}
-                  <button onClick={() => handleAddSet(ex)} className="w-full py-3 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-xs font-bold hover:bg-slate-50 mt-2">+ إضافة مجموعة جديدة</button>
+                  <button onClick={() => handleAddSet(ex)} className="w-full py-3 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-xs font-bold hover:bg-slate-50 mt-2 transition-colors">+ إضافة مجموعة جديدة</button>
                 </div>
               )}
             </div>
@@ -245,18 +303,30 @@ export const WorkoutModal: React.FC<WorkoutModalProps> = ({ isOpen, onClose, wor
         })}
       </div>
 
-      {!isAddingExercise && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-30">
-          <button onClick={handleSaveWorkout} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black shadow-2xl flex items-center gap-3 active:scale-95 transition-all"><CheckCircle2 size={22}/> إنهاء وحفظ التمرين</button>
+      {!isAddingExercise && exercises.length > 0 && (
+        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-50 to-transparent pointer-events-none">
+          <div className="max-w-md mx-auto pointer-events-auto">
+            <button 
+                onClick={handleSaveWorkout} 
+                disabled={isSaving}
+                className={`w-full py-4 rounded-2xl font-black shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all ${isSaving ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white shadow-slate-300'}`}
+            >
+                {isSaving ? <><Loader2 className="animate-spin" size={22}/> جاري الحفظ...</> : <><CheckCircle2 size={22}/> إنهاء وحفظ التمرين</>}
+            </button>
+          </div>
         </div>
       )}
 
       {isAddingExercise && (
         <div className="absolute inset-0 bg-white z-50 flex flex-col animate-in slide-in-from-bottom-full duration-400">
-          <div className="p-4 border-b space-y-4 bg-slate-50">
+          <div className="p-4 border-b space-y-4 bg-slate-50 safe-top">
             <div className="flex gap-2 items-center">
-              <button onClick={() => setIsAddingExercise(false)} className="p-2 bg-white border border-slate-200 rounded-xl text-slate-600 shadow-sm active:scale-90 transition-all">
-                <ChevronRight size={24} />
+              <button 
+                onClick={() => setIsAddingExercise(false)} 
+                className="flex items-center gap-1.5 p-2 px-3 bg-white border border-slate-200 rounded-xl text-slate-600 shadow-sm active:scale-90 transition-all font-bold text-xs"
+              >
+                <ArrowRight size={18} />
+                <span>رجوع</span>
               </button>
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -265,19 +335,24 @@ export const WorkoutModal: React.FC<WorkoutModalProps> = ({ isOpen, onClose, wor
             </div>
             <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
               {['all', 'templates', 'cardio', 'core'].map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab as any)} className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === tab ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white border text-slate-500'}`}>
+                <button key={tab} onClick={() => setActiveTab(tab as any)} className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === tab ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white border text-slate-500'}`}>
                   {tab === 'all' ? 'الكل' : tab === 'templates' ? 'الروتينات' : tab === 'cardio' ? 'كارديو' : 'بطن'}
                 </button>
               ))}
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white">
-            {activeTab === 'templates' ? templates.map(t => (
-              <div key={t.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center hover:border-indigo-200 transition-colors">
-                <div className="flex items-center gap-3"><div className="bg-indigo-50 p-2.5 rounded-xl text-indigo-600"><Layers size={20} /></div><div className="text-right"><h4 className="font-bold text-slate-700">{t.name}</h4><p className="text-[10px] text-slate-400 font-bold uppercase">{t.exercises.length} تمارين</p></div></div>
-                <button onClick={() => handleLoadRoutine(t)} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-bold active:scale-95 transition-all">تحميل</button>
-              </div>
-            )) : EXERCISE_DB.filter(e => {
+            {activeTab === 'templates' ? (
+                templates.map(t => (
+                    <div key={t.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center hover:border-indigo-200 transition-colors">
+                      <div className="flex items-center gap-3">
+                          <div className="bg-indigo-50 p-2.5 rounded-xl text-indigo-600"><Layers size={20} /></div>
+                          <div className="text-right"><h4 className="font-bold text-slate-700">{t.name}</h4><p className="text-[10px] text-slate-400 font-bold uppercase">{t.exercises.length} تمارين</p></div>
+                      </div>
+                      <button onClick={() => handleLoadRoutine(t)} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-bold active:scale-95 transition-all">تحميل</button>
+                    </div>
+                ))
+            ) : EXERCISE_DB.filter(e => {
               const m = e.name.toLowerCase().includes(searchTerm.toLowerCase());
               if(activeTab === 'cardio') return e.muscle === 'Cardio' && m;
               if(activeTab === 'core') return e.muscle === 'Core' && m;
